@@ -1,0 +1,28 @@
+FROM mysql:8.0
+
+# Database settings
+ENV MYSQL_DATABASE=imdb
+ENV MYSQL_ROOT_PASSWORD=mysql
+
+# Enable LOAD DATA INFILE from /data
+RUN printf '[mysqld]\nsecure_file_priv=/data\nsql_mode=NO_ENGINE_SUBSTITUTION\ndefault_authentication_plugin=mysql_native_password\ninnodb_redo_log_capacity=2147483648\n' > /etc/mysql/conf.d/imdb.cnf
+
+# 1. Prepare the data directory and copy the CSVs
+RUN mkdir -p /data
+COPY data/*.csv /data/
+
+# 2. Initialization scripts (numbered to guarantee order)
+# Step 00: Configure native authentication for JDBC client compatibility
+RUN printf "ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY 'mysql';\nFLUSH PRIVILEGES;\n" > /docker-entrypoint-initdb.d/00_auth.sql
+
+# Step 01: Create the table structure
+COPY mysql_schema.sql /docker-entrypoint-initdb.d/01_schema.sql
+
+# Step 02: Populate the tables via LOAD DATA INFILE
+COPY mysql_import.sql /docker-entrypoint-initdb.d/02_import.sql
+
+# Step 03: Create indexes
+COPY join-order-benchmark/fkindexes.sql /docker-entrypoint-initdb.d/03_indexes.sql
+
+# Make sure MySQL can read the CSV files
+RUN chmod -R 755 /data

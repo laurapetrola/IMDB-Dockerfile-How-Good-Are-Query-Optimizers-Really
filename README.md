@@ -46,11 +46,9 @@ docker build -t imdb-postgres .
 ```bash
 docker run -d \
   --name imdb \
-  -p 5432:5432 \
+  -p 5436:5432 \
   imdb-postgres
 ```
-
-> If port 5432 is already in use on your machine (e.g., a local PostgreSQL instance running), change the host port: `-p 5434:5432`
 
 ### 3. Connect to the database
 
@@ -63,13 +61,62 @@ Or via any PostgreSQL client (DBeaver, psql, etc.) with:
 | Parameter | Value     |
 |-----------|-----------|
 | Host      | localhost |
-| Port      | 5432      |
+| Port      | 5436      |
 | Database  | imdb      |
 | User      | postgres  |
 | Password  | postgres  |
+
+Connection string:
+
+```
+DB_URI=postgresql://postgres:postgres@localhost:5436/imdb
+```
 
 ### 4. Run a benchmark query
 
 ```bash
 docker exec -i imdb psql -U postgres -d imdb < join-order-benchmark/1a.sql
+```
+
+---
+
+## MySQL
+
+### 1. Build the image
+
+```bash
+docker build -f Dockerfile.mysql -t imdb-mysql .
+```
+
+### 2. Start the container
+
+```bash
+docker run -d \
+  --name imdb-mysql \
+  -p 3306:3306 \
+  imdb-mysql
+```
+
+> If port 3306 is already in use, change the host port: `-p 3307:3306`
+
+### 3. Connect to the database
+
+```bash
+docker exec -it imdb-mysql mysql -u root -pmysql imdb
+```
+
+Or via any MySQL client (DBeaver, MySQL Workbench, etc.) with:
+
+| Parameter | Value     |
+|-----------|-----------|
+| Host      | localhost |
+| Port      | 3306      |
+| Database  | imdb      |
+| User      | root      |
+| Password  | mysql     |
+
+### 4. Run a benchmark query
+
+```bash
+docker exec -i imdb-mysql mysql -u root -pmysql imdb < join-order-benchmark/1a.sql
 ```
